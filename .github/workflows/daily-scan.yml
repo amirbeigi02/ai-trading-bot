@@ -1,0 +1,27 @@
+name: AI Trading Bot Scanner
+
+on:
+  schedule:
+    # ساعت 04:00 به وقت جهانی (UTC) یعنی 07:30 صبح به وقت ایران
+    - cron: '0 4 * * *'
+  workflow_dispatch: # این خط اجازه می‌دهد که خودت هم دستی اجرا کنی
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance pandas_ta xgboost requests vaderSentiment
+
+      - name: Run AI Bot
+        run: |
+          python robot.py
