@@ -6,8 +6,7 @@ import requests
 import time
 
 # =======================================================
-BOT_TOKEN = '8977258072:AAFmvZMAIszyIhABqsoC20SMMkSAOod01VY
-'
+BOT_TOKEN = '8977258072:AAFmvZMAIszyIhABqsoC20SMMkSAOod01VY'
 CHAT_ID = '90858617'
 # =======================================================
 
