@@ -23,18 +23,28 @@ results = []
 
 for name, symbol in symbols.items():
     try:
-        # تغییر مهم: گرفتن کندل‌های ۱ ساعته در ۶۰ روز گذشته
         df = yf.download(symbol, period="60d", interval="1h", auto_adjust=True, progress=False)
+        
+        # بررسی اینکه آیا داده‌ای اصلا دریافت شده یا خیر
+        if df.empty:
+            print(f"No data for {name}, skipping.")
+            continue
+            
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
             
         df.ta.rsi(length=14, append=True)
         df.ta.macd(append=True)
         df.ta.ema(length=20, append=True)
-        df.ta.atr(length=14, append=True) # اضافه شدن اندیکاتور نوسانات برای حد ضرر
+        df.ta.atr(length=14, append=True)
         df['Target'] = (df['Close'].shift(-1) > df['Close']).astype(int)
         df.dropna(inplace=True)
         
+        # بررسی اینکه آیا داده کافی برای آموزش هوش مصنوعی وجود دارد یا خیر
+        if len(df) < 50:
+            print(f"Not enough data for {name}, skipping.")
+            continue
+
         base_cols = ['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'Target']
         features = [col for col in df.columns if col not in base_cols]
         
@@ -45,7 +55,6 @@ for name, symbol in symbols.items():
         current_price = df['Close'].iloc[-1]
         current_atr = df['ATRr_14'].iloc[-1]
         
-        # فرمت کردن قیمت برای نمایش
         if current_price > 1000:
             price_str = f"${current_price:.2f}"
         elif current_price > 10:
@@ -53,7 +62,6 @@ for name, symbol in symbols.items():
         else:
             price_str = f"{current_price:.5f}"
         
-        # محاسبه حد سود و ضرر با نسبت ریسک به ریوارد 1 به 2
         if prob[1] > 0.60:
             signal = "🟢 خرید (Long)"
             tp = current_price + (current_atr * 2)
@@ -68,13 +76,17 @@ for name, symbol in symbols.items():
             signal = "⚪️ صبر کن"
             details = ""
             
-        results.append(f"🔹 {name}\n   قیمت: {price_str}\n   سیگنال: {signal}\n{details}\n")
+        results.append(f"🔹 {name}\n   قیمت: {price_str}\n   سیگنال: {signal}\n{details}")
         time.sleep(1)
         
     except Exception as e:
         print(f"Error on {name}: {e}")
 
-message_text = "📡 سیگنال‌های هوش مصنوعی (تایم‌فریم ۱ ساعته)\n\n" + "\n".join(results) + "\n⚠️ مدیریت سرمایه فراموش نشود."
+# اگر هیچ سیگنالی پیدا نشد، یک پیام پیش‌فرض بگذار تا پیام خالی نرود
+if not results:
+    results.append("متاسفانه در این لحظه دریافت داده از سرور یاهو با مشکل مواجه شده است. لطفاً اجرای بعدی را صبر کنید.")
+
+message_text = "📡 سیگنال‌های هوش مصنوعی (تایم‌فریم ۱ ساعته)\n\n" + "\n\n".join(results) + "\n\n⚠️ مدیریت سرمایه فراموش نشود."
 
 print("\nSending to Telegram...")
 url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
